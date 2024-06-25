@@ -3,8 +3,8 @@ using System.Collections;
 
 public class Health : MonoBehaviour
 {
-    [Header ("Health")]
-    [SerializeField] private float startingHealth;
+    [Header("Health")]
+    [SerializeField] public float startingHealth;
     public float currentHealth { get; private set; }
     private Animator anim;
     private bool dead;
@@ -28,6 +28,7 @@ public class Health : MonoBehaviour
         anim = GetComponent<Animator>();
         spriteRend = GetComponent<SpriteRenderer>();
     }
+
     public void TakeDamage(float _damage)
     {
         if (invulnerable) return;
@@ -55,10 +56,17 @@ public class Health : MonoBehaviour
             }
         }
     }
+
     public void AddHealth(float _value)
     {
         currentHealth = Mathf.Clamp(currentHealth + _value, 0, startingHealth);
     }
+
+    public void SetHealth(float _value)
+    {
+        currentHealth = Mathf.Clamp(_value, 0, startingHealth);
+    }
+
     private IEnumerator Invunerability()
     {
         invulnerable = true;
@@ -73,6 +81,7 @@ public class Health : MonoBehaviour
         Physics2D.IgnoreLayerCollision(10, 11, false);
         invulnerable = false;
     }
+
     private void Deactivate()
     {
         gameObject.SetActive(false);
@@ -81,7 +90,7 @@ public class Health : MonoBehaviour
     //Respawn
     public void Respawn()
     {
-        AddHealth(startingHealth);
+        SetHealth(startingHealth);
         anim.ResetTrigger("die");
         anim.Play("Idle");
         StartCoroutine(Invunerability());
