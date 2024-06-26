@@ -36,7 +36,7 @@ public class RangedEnemy : MonoBehaviour
     {
         cooldownTimer += Time.deltaTime;
 
-        //Attack only when player in sight?
+        //Attack only when player in sight
         if (PlayerInSight())
         {
             if (cooldownTimer >= attackCooldown)
@@ -44,10 +44,15 @@ public class RangedEnemy : MonoBehaviour
                 cooldownTimer = 0;
                 anim.SetTrigger("rangedAttack");
             }
-        }
 
-        if (enemyPatrol != null)
-            enemyPatrol.enabled = !PlayerInSight();
+            if (enemyPatrol != null)
+                enemyPatrol.canMove = false;
+        }
+        else
+        {
+            if (enemyPatrol != null)
+                enemyPatrol.canMove = true;
+        }
     }
 
     private void RangedAttack()
@@ -57,6 +62,7 @@ public class RangedEnemy : MonoBehaviour
         fireballs[FindFireball()].transform.position = firepoint.position;
         fireballs[FindFireball()].GetComponent<EnemyProjectile>().ActivateProjectile();
     }
+
     private int FindFireball()
     {
         for (int i = 0; i < fireballs.Length; i++)
@@ -76,6 +82,7 @@ public class RangedEnemy : MonoBehaviour
 
         return hit.collider != null;
     }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;

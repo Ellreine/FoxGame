@@ -1,27 +1,39 @@
 using UnityEngine;
-using System.Collections;
 
 public class BossEnemy : MonoBehaviour
 {
-    [Header("Attack Parameters")]
-    [SerializeField] private float attackCooldown;
-    [SerializeField] private float range;
-    [SerializeField] private int damage;
+    [Header("Melee Attack Parameters")]
+    [SerializeField] private float meleeAttackCooldown;
+    [SerializeField] private float meleeRange;
+    [SerializeField] private int meleeDamage;
 
+    [Header("Ranged Attack Parameters")]
+    [SerializeField] private float rangedAttackCooldown;
+    [SerializeField] private float rangedRange;
+    [SerializeField] private int rangedDamage;
+
+    [Header("Ranged Attack")]
+    [SerializeField] private Transform firepoint;
+    [SerializeField] private GameObject[] fireballs;
 
     [Header("Collider Parameters")]
-    [SerializeField] private float colliderDistance;
-    [SerializeField] private BoxCollider2D boxCollider;
+    [SerializeField] private float meleeColliderDistance;
+    [SerializeField] private float rangedColliderDistance;
+    [SerializeField] private BoxCollider2D meleeCollider;
+    [SerializeField] private BoxCollider2D rangedCollider;
 
     [Header("Player Layer")]
     [SerializeField] private LayerMask playerLayer;
+    private float meleeCooldownTimer = Mathf.Infinity;
+    private float rangedCooldownTimer = Mathf.Infinity;
 
-    private float cooldownTimer = Mathf.Infinity;
+    [Header("Fireball Sound")]
+    [SerializeField] private AudioClip fireballSound;
 
     // References
     private Animator anim;
-    private Health playerHealth;
     private EnemyPatrol enemyPatrol;
+    private Health playerHealth;
 
     private void Awake()
     {
@@ -31,29 +43,54 @@ public class BossEnemy : MonoBehaviour
 
     private void Update()
     {
-        cooldownTimer += Time.deltaTime;
-       
+        meleeCooldownTimer += Time.deltaTime;
+        rangedCooldownTimer += Time.deltaTime;
 
-        if (PlayerInSight())
+        bool isPlayerInMeleeRange = PlayerInMeleeRange();
+        bool isPlayerInRangedRange = PlayerInRangedRange();
+
+        if (isPlayerInMeleeRange)
         {
-            if (cooldownTimer >= attackCooldown)
+            if (meleeCooldownTimer >= meleeAttackCooldown)
             {
-                cooldownTimer = 0;
+                meleeCooldownTimer = 0;
                 anim.SetTrigger("meleeAttack");
+            }
+        }
+        else if (isPlayerInRangedRange)
+        {
+            if (rangedCooldownTimer >= rangedAttackCooldown)
+            {
+                rangedCooldownTimer = 0;
+                anim.SetTrigger("rangedAttack");
             }
         }
 
         if (enemyPatrol != null)
         {
-            enemyPatrol.enabled = !PlayerInSight();
+            enemyPatrol.enabled = !(isPlayerInMeleeRange || isPlayerInRangedRange);
         }
     }
 
-
-    private bool PlayerInSight()
+    private bool PlayerInMeleeRange()
     {
-        RaycastHit2D hit = Physics2D.BoxCast(boxCollider.bounds.center + transform.right * range * transform.localScale.x * colliderDistance,
-                                  new Vector3(boxCollider.bounds.size.x * range, boxCollider.bounds.size.y, boxCollider.bounds.size.z),
+        RaycastHit2D hit = Physics2D.BoxCast(meleeCollider.bounds.center + transform.right * meleeRange * transform.localScale.x * meleeColliderDistance,
+                                  new Vector3(meleeCollider.bounds.size.x * meleeRange, meleeCollider.bounds.size.y, meleeCollider.bounds.size.z),
+                                  0, Vector2.left, 0, playerLayer);
+
+        if (hit.collider != null)
+        {
+            playerHealth = hit.transform.GetComponent<Health>();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool PlayerInRangedRange()
+    {
+        RaycastHit2D hit = Physics2D.BoxCast(rangedCollider.bounds.center + transform.right * rangedRange * transform.localScale.x * rangedColliderDistance,
+                                  new Vector3(rangedCollider.bounds.size.x * rangedRange, rangedCollider.bounds.size.y, rangedCollider.bounds.size.z),
                                   0, Vector2.left, 0, playerLayer);
 
         if (hit.collider != null)
@@ -67,15 +104,50 @@ public class BossEnemy : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(boxCollider.bounds.center + transform.right * range * transform.localScale.x * colliderDistance,
-            new Vector3(boxCollider.bounds.size.x * range, boxCollider.bounds.size.y, boxCollider.bounds.size.z));
-    }
+        if (meleeCollider != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(meleeCollider.bounds.center + transform.right * meleeRange * transform.localScale.x * meleeColliderDistance,
+                new Vector3(meleeCollider.bounds.size.x * meleeRange, meleeCollider.bounds.size.y, meleeCollider.bounds.size.z));
+        }
 
+        if (rangedCollider != null)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireCube(rangedCollider.bounds.center + transform.right * rangedRange * transform.localScale.x * rangedColliderDistance,
+                new Vector3(rangedCollider.bounds.size.x * rangedRange, rangedCollider.bounds.size.y, rangedCollider.bounds.size.z));
+        }
+    }
 
     private void DamagePlayer()
     {
-        if (PlayerInSight())
-            playerHealth.TakeDamage(damage);
+        if (PlayerInMeleeRange() && playerHealth != null)
+            playerHealth.TakeDamage(meleeDamage);
+    }
+
+    private void RangedAttack()
+    {
+        SoundManager.instance.PlaySound(fireballSound);
+
+        int fireballIndex = FindFireball();
+        if (fireballs[fireballIndex] != null)
+        {
+            fireballs[fireballIndex].transform.position = firepoint.position;
+            fireballs[fireballIndex].GetComponent<EnemyProjectile>().ActivateProjectile();
+        }
+        else
+        {
+            Debug.LogError("Fireball не найден или не активен");
+        }
+    }
+
+    private int FindFireball()
+    {
+        for (int i = 0; i < fireballs.Length; i++)
+        {
+            if (!fireballs[i].activeInHierarchy)
+                return i;
+        }
+        return 0;
     }
 }
