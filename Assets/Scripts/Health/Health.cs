@@ -44,7 +44,7 @@ public class Health : MonoBehaviour
         {
             if (!dead)
             {
-                //Deactivate all attached component classes
+                // Деактивация всех прикреплённых компонентов
                 foreach (Behaviour component in components)
                     component.enabled = false;
 
@@ -56,6 +56,7 @@ public class Health : MonoBehaviour
             }
         }
     }
+
 
     public void AddHealth(float _value)
     {

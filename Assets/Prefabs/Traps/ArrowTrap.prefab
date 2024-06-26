@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1388438300054988832}
   - component: {fileID: 1388438300054988839}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -93,7 +93,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1388438300090765596}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Firepoint
   m_TagString: Untagged
   m_Icon: {fileID: 6519382022992737161, guid: 0000000000000000d000000000000000, type: 0}
@@ -125,9 +125,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1388438300447749892}
   - component: {fileID: 1388438300447749883}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: ArrowTrap
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -185,7 +185,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1388438301728355947}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: ArrowHolder
   m_TagString: Untagged
   m_Icon: {fileID: 0}

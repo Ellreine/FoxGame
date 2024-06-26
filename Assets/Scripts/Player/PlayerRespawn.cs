@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class PlayerRespawn : MonoBehaviour
 {
@@ -7,12 +9,23 @@ public class PlayerRespawn : MonoBehaviour
     private Health playerHealth;
     private UIManager uiManager;
 
+    private List<Transform> checkpoints = new List<Transform>();
+
     private void Awake()
     {
         playerHealth = GetComponent<Health>();
         uiManager = FindObjectOfType<UIManager>();
 
         // Load the saved data
+        LoadCheckpointData();
+    }
+
+    private void Start()
+    {
+        // Find all checkpoints on the current level
+        FindCheckpoints();
+
+        // Load checkpoint data after checkpoints are found
         LoadCheckpointData();
     }
 
@@ -24,16 +37,16 @@ public class PlayerRespawn : MonoBehaviour
             return;
         }
 
-        playerHealth.Respawn(); //Restore player health and reset animation
-        transform.position = currentCheckpoint.position; //Move player to checkpoint location
+        playerHealth.Respawn(); // Restore player health and reset animation
+        transform.position = currentCheckpoint.position; // Move player to checkpoint location
 
-        //Move the camera to the checkpoint's room
+        // Move the camera to the checkpoint's room
         Camera.main.GetComponent<CameraController>().MoveToNewRoom(currentCheckpoint.parent);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.tag == "Checkpoint")
+        if (collision.gameObject.CompareTag("Checkpoint"))
         {
             currentCheckpoint = collision.transform;
             SoundManager.instance.PlaySound(checkpoint);
@@ -41,28 +54,45 @@ public class PlayerRespawn : MonoBehaviour
             collision.GetComponent<Animator>().SetTrigger("activate");
 
             // Save checkpoint data
-            SaveCheckpointData();
+            GameDataManager.SaveLocationData(SceneManager.GetActiveScene().buildIndex, currentCheckpoint.name);
         }
     }
 
-    private void SaveCheckpointData()
+    private void FindCheckpoints()
     {
-        PlayerPrefs.SetFloat("PlayerX", currentCheckpoint.position.x);
-        PlayerPrefs.SetFloat("PlayerY", currentCheckpoint.position.y);
-        PlayerPrefs.SetFloat("PlayerHealth", playerHealth.currentHealth);
-        PlayerPrefs.Save();
+        checkpoints.Clear();
+        GameObject[] checkpointObjects = GameObject.FindGameObjectsWithTag("Checkpoint");
+        foreach (GameObject checkpointObject in checkpointObjects)
+        {
+            checkpoints.Add(checkpointObject.transform);
+        }
     }
 
     private void LoadCheckpointData()
     {
-        if (PlayerPrefs.HasKey("PlayerX") && PlayerPrefs.HasKey("PlayerY"))
-        {
-            float x = PlayerPrefs.GetFloat("PlayerX");
-            float y = PlayerPrefs.GetFloat("PlayerY");
-            transform.position = new Vector2(x, y);
+        int savedLevel = GameDataManager.LoadLevel();
+        string savedCheckpoint = GameDataManager.LoadCheckpoint();
 
-            float health = PlayerPrefs.GetFloat("PlayerHealth", playerHealth.startingHealth);
-            playerHealth.SetHealth(health);
+        if (savedLevel == SceneManager.GetActiveScene().buildIndex && !string.IsNullOrEmpty(savedCheckpoint))
+        {
+            foreach (var checkpoint in checkpoints)
+            {
+                if (checkpoint.name == savedCheckpoint)
+                {
+                    currentCheckpoint = checkpoint;
+                    transform.position = currentCheckpoint.position;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // ≈сли данных нет, начнем с первой контрольной точки
+            if (checkpoints.Count > 0)
+            {
+                currentCheckpoint = checkpoints[0];
+                transform.position = currentCheckpoint.position;
+            }
         }
     }
 }
